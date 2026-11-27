@@ -1,0 +1,15 @@
+# Cloudflare Pages — redirections
+# https://developers.cloudflare.com/pages/configuration/redirects/
+#
+# Le nouveau site garde les mêmes adresses que Cargo (/tv_page, /arcane, /about…)
+# grâce aux "clean URLs" de Pages : /tv_page sert automatiquement tv_page.html.
+# Les lignes ci-dessous rattrapent les anciennes adresses de sections Cargo
+# et les variantes courantes, pour ne casser aucun lien partagé.
+
+/index          /                      301
+/index.html     /                      301
+/tv             /tv_page               301
+/tv_projects    /tv_page               301
+/commercials    /commercials_page-1    301
+/games          /game_page             301
+/personal       /personal_page         301
