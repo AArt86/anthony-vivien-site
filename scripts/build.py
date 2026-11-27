@@ -280,7 +280,7 @@ def nav_html(active):
     return f"""<header class="site-header">
   <a class="brand" href="/" aria-label="{NAME}, home">
     <img src="/media/{AVATAR}.webp" alt="" width="48" height="29">
-    <span>Anthony<br>Vivien</span>
+    <span>Anthony <br>Vivien</span>
   </a>
   <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">{ICONS["menu"]}</button>
   <nav id="site-nav" class="site-nav" aria-label="Main">
@@ -338,8 +338,14 @@ def build_home():
     labels = {"tv_page": "TV & Animation", "commercials_page-1": "Commercials", "game_page": "Video Games"}
     cards = []
     first = None
+    # Les vignettes Cargo ont le texte incrusté (« TV », « GAMES »…) : on prend des visuels propres
+    grid = {h: mh for c in ("tv_page", "game_page") for h, _, _, mh in grid_items(c) if h}
+    com_imgs = [h for h in re.findall(r'class="zoomable" hash="([^"]+)"', PAGES["commercials_page-1"]["content"])]
+    pick = {"tv_page": grid.get("pfffirates"), "game_page": grid.get("the-travelling-land"),
+            "commercials_page-1": com_imgs[0] if com_imgs else None}
     for mi in BeautifulSoup(idx, "html.parser").find_all("media-item"):
-        m, href = MEDIA[mi["hash"]], mi.get("href")
+        href = mi.get("href")
+        m = MEDIA.get(pick.get(href)) or MEDIA[mi["hash"]]
         first = first or m
         cards.append(f'<a class="cat-card" href="/{href}">{img_tag(m, labels.get(href, ""), eager=True, sizes="(min-width: 900px) 33vw, 100vw")}'
                      f'<span class="cat-label">{labels.get(href, "")}<span class="ico">{ICONS["arrow-right"]}</span></span></a>')
