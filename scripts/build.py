@@ -257,7 +257,7 @@ for _cat in ("tv_page", "game_page"):
 
 AVATAR = re.search(r'hash="([^"]+)"', PAGES["left-nav-—-desktop"]["content"]).group(1)
 OG_DEFAULT = re.search(r'hash="([^"]+)"', PAGES["index"]["content"]).group(1)
-VERSION = "3"
+VERSION = "4"
 
 PERSON_LD = {
     "@context": "https://schema.org", "@type": "Person", "name": NAME,
@@ -335,37 +335,36 @@ def page(path, title, desc, body, active=None, og_image=None, ld=None, extra_cla
 # --------------------------------------------------------------- pages
 def build_home():
     idx = PAGES["index"]["content"]
-    labels = {"tv_page": "TV & Animation", "commercials_page-1": "Commercials", "game_page": "Video Games"}
+    # 3 bannières verticales — visuels haute définition, cadrés au centre
+    # Visuels recadrés en portrait (sans bandes noires ni logos) : site/media/banners/
+    from PIL import Image
+    banners = [("tv_page", "TV & Animation", "tv"), ("commercials_page-1", "Commercials", "commercials"),
+               ("game_page", "Video Games", "games")]
     cards = []
-    first = None
-    # Les vignettes Cargo ont le texte incrusté (« TV », « GAMES »…) : on prend des visuels propres
-    grid = {h: mh for c in ("tv_page", "game_page") for h, _, _, mh in grid_items(c) if h}
-    com_imgs = [h for h in re.findall(r'class="zoomable" hash="([^"]+)"', PAGES["commercials_page-1"]["content"])]
-    pick = {"tv_page": grid.get("pfffirates"), "game_page": grid.get("the-travelling-land"),
-            "commercials_page-1": com_imgs[0] if com_imgs else None}
-    for mi in BeautifulSoup(idx, "html.parser").find_all("media-item"):
-        href = mi.get("href")
-        m = MEDIA.get(pick.get(href)) or MEDIA[mi["hash"]]
-        first = first or m
-        cards.append(f'<a class="cat-card" href="/{href}">{img_tag(m, labels.get(href, ""), eager=True, sizes="(min-width: 900px) 33vw, 100vw")}'
-                     f'<span class="cat-label">{labels.get(href, "")}<span class="ico">{ICONS["arrow-right"]}</span></span></a>')
-    feat_ids = ["arcane", "the-travelling-land", "maiko", "101-dalmatian-street", "soul-of-kaeru", "pfffirates", "orphan-age", "once-your-land"]
-    allitems = {h: (t, meta, mh) for c in ("tv_page", "game_page") for h, t, meta, mh in grid_items(c) if h}
+    for href, label, f in banners:
+        w, h = Image.open(SITE / "media" / "banners" / f"{f}.webp").size
+        cards.append(
+            f'<a class="banner" href="/{href}">'
+            f'<img src="/media/banners/{f}.webp" alt="{esc(label)}" width="{w}" height="{h}" loading="eager" decoding="async">'
+            f'<span class="banner-label">{esc(label)}</span></a>')
+    first = MEDIA["X2646810697935934864224642616189"]
+    # Derniers projets : triés par année, du plus récent au plus ancien
+    items = []
+    for c in ("tv_page", "game_page"):
+        for h, t, meta, mh in grid_items(c):
+            if h and h in PAGES:
+                years = re.findall(r"(?:19|20)\d\d", meta)
+                items.append((int(years[-1]) if years else 0, h, t, meta, mh))
+    items.sort(key=lambda x: -x[0])
     feats = []
-    for pid in feat_ids:
-        if pid in allitems:
-            t, meta, mh = allitems[pid]
-            feats.append(f'<a class="proj-card" href="/{pid}">{img_tag(MEDIA[mh], t, sizes="(min-width: 900px) 25vw, 50vw")}'
-                         f'<span class="proj-title">{esc(t)}</span><span class="proj-meta">{esc(meta)}</span></a>')
-    body = f"""<section class="hero">
-  <p class="eyebrow">{TAGLINE}</p>
-  <h1>Colourful worlds for <em>animation</em>, <em>advertising</em> &amp; <em>games</em>.</h1>
-  <p class="lead">I'm Anthony Vivien, a French concept artist and art director with more than 15 years in the animation industry, from visual development and colorscripts to art direction. Co-founder of the game studio Brain Up, now freelance and open to new creative challenges.</p>
-  <p class="cta"><a class="btn" href="mailto:{CONTACT}">Get in touch</a> <a class="btn ghost" href="/about">About me</a></p>
-</section>
-<section class="cats" aria-label="Work">{''.join(cards)}</section>
+    for year, pid, t, meta, mh in items[:8]:
+        role = re.sub(r"\s*(?:Brain Up\s*-\s*)?(?:19|20)\d\d\s*$", "", meta).strip()
+        feats.append(f'<a class="proj-card" href="/{pid}">{img_tag(MEDIA[mh], t, sizes="(min-width: 900px) 25vw, 50vw")}'
+                     f'<span class="proj-title">{esc(t)}</span><span class="proj-meta">{esc(role)} · {year}</span></a>')
+    body = f"""<h1 class="sr-only">{NAME} — {TAGLINE}</h1>
+<section class="banners" aria-label="Work">{''.join(cards)}</section>
 <section class="featured">
-  <h2 class="section-title">Selected projects</h2>
+  <h2 class="section-title">Latest projects</h2>
   <div class="proj-grid">{''.join(feats)}</div>
 </section>"""
     ld = {"@context": "https://schema.org", "@type": "WebSite", "name": NAME, "url": BASE_URL + "/", "author": PERSON_LD}
