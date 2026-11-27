@@ -188,3 +188,13 @@ h1,h2,h3{font-family:var(--display);line-height:1.15;font-weight:600;letter-spac
   .banners::-webkit-scrollbar{display:none}
   .banner{scroll-snap-align:center;max-height:none}
 }
+
+/* ---------- accueil : disposition libre reprise de Cargo ---------- */
+.freeform{--u:calc(min(100vw - var(--side) - 2*var(--pad), 1100px) / 100);position:relative;max-width:1100px;height:calc(var(--ratio) * var(--u))}
+.ff-item{position:absolute;display:block;border-radius:1.2rem;overflow:hidden;transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+.ff-item img{width:100%;height:auto}
+.ff-item:hover{transform:translateY(-4px) scale(1.015);box-shadow:0 14px 34px rgba(0,0,0,.16);z-index:2}
+@media (max-width:899px){
+  .freeform{height:auto;display:flex;flex-direction:column;gap:1rem}
+  .ff-item{position:static;width:100%!important}
+}

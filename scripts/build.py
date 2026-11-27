@@ -257,7 +257,7 @@ for _cat in ("tv_page", "game_page"):
 
 AVATAR = re.search(r'hash="([^"]+)"', PAGES["left-nav-—-desktop"]["content"]).group(1)
 OG_DEFAULT = re.search(r'hash="([^"]+)"', PAGES["index"]["content"]).group(1)
-VERSION = "4"
+VERSION = "5"
 
 PERSON_LD = {
     "@context": "https://schema.org", "@type": "Person", "name": NAME,
@@ -336,18 +336,22 @@ def page(path, title, desc, body, active=None, og_image=None, ld=None, extra_cla
 def build_home():
     idx = PAGES["index"]["content"]
     # 3 bannières verticales — visuels haute définition, cadrés au centre
-    # Visuels recadrés en portrait (sans bandes noires ni logos) : site/media/banners/
-    from PIL import Image
-    banners = [("tv_page", "TV & Animation", "tv"), ("commercials_page-1", "Commercials", "commercials"),
-               ("game_page", "Video Games", "games")]
-    cards = []
-    for href, label, f in banners:
-        w, h = Image.open(SITE / "media" / "banners" / f"{f}.webp").size
+    # Même disposition que l'accueil Cargo (gallery-freeform) avec les 3 visuels d'origine :
+    # TV en haut à gauche, Commercials à droite, Games dessous — positions en % de la largeur
+    layout = {"tv_page": (0.0, 0.0, 50.0), "commercials_page-1": (50.5, 0.0, 40.0), "game_page": (13.8, 25.7, 36.1)}
+    labels = {"tv_page": "TV & Animation", "commercials_page-1": "Commercials", "game_page": "Video Games"}
+    cards, first, bottom = [], None, 0
+    for mi in BeautifulSoup(idx, "html.parser").find_all("media-item"):
+        href = mi.get("href")
+        m = MEDIA[mi["hash"]]
+        first = first or m
+        x, y, w = layout[href]
+        hgt = w * m["h"] / m["w"]
+        bottom = max(bottom, y + hgt)
         cards.append(
-            f'<a class="banner" href="/{href}">'
-            f'<img src="/media/banners/{f}.webp" alt="{esc(label)}" width="{w}" height="{h}" loading="eager" decoding="async">'
-            f'<span class="banner-label">{esc(label)}</span></a>')
-    first = MEDIA["X2646810697935934864224642616189"]
+            f'<a class="ff-item" href="/{href}" style="left:{x}%;top:calc({y} * var(--u));width:{w}%">'
+            f'<img src="/media/{m["hash"]}.webp" alt="{labels[href]}" width="{m["w"]}" height="{m["h"]}" loading="eager" decoding="async"></a>')
+    freeform = f'<section class="freeform" style="--ratio:{bottom:.2f}" aria-label="Work">{"".join(cards)}</section>'
     # Derniers projets : triés par année, du plus récent au plus ancien
     items = []
     for c in ("tv_page", "game_page"):
@@ -362,7 +366,7 @@ def build_home():
         feats.append(f'<a class="proj-card" href="/{pid}">{img_tag(MEDIA[mh], t, sizes="(min-width: 900px) 25vw, 50vw")}'
                      f'<span class="proj-title">{esc(t)}</span><span class="proj-meta">{esc(role)} · {year}</span></a>')
     body = f"""<h1 class="sr-only">{NAME} — {TAGLINE}</h1>
-<section class="banners" aria-label="Work">{''.join(cards)}</section>
+{freeform}
 <section class="featured">
   <h2 class="section-title">Latest projects</h2>
   <div class="proj-grid">{''.join(feats)}</div>
